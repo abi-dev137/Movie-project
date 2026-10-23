@@ -10,8 +10,9 @@
 
 <body>
 
-<!-- Auth Overlay / Card (Shown when NOT logged in) -->
-<div id="auth-container" class="auth-card">
+<!-- Sign in / sign up card. It starts hidden so people who are already logged in
+     don't see it flash up while Firebase checks. movies.js shows it when nobody is signed in. -->
+<div id="auth-container" class="auth-card" style="display: none;">
   <h2 id="auth-title">Welcome to Movie Watchlist</h2>
   <p id="auth-subtitle">Sign in to access your personal movie library</p>
 
@@ -24,6 +25,12 @@
     <div class="input-group">
       <label for="auth-password">Password</label>
       <input type="password" id="auth-password" placeholder="At least 6 characters" required autocomplete="current-password" />
+    </div>
+
+    <!-- Only shown when creating an account, so a typo in the password gets caught -->
+    <div class="input-group" id="auth-confirm-group" style="display: none;">
+      <label for="auth-confirm">Confirm password</label>
+      <input type="password" id="auth-confirm" placeholder="Type it again" autocomplete="new-password" />
     </div>
 
     <p id="auth-error" class="auth-error-msg" style="display: none;"></p>
@@ -43,10 +50,8 @@
   <button id="logout-btn" class="secondary-btn">Sign Out</button>
 </header>
 
-<!-- Main App Content (Hidden until logged in) -->
+<!-- Main app content. Hidden until someone is logged in, and the whole movie page lives inside it -->
 <main id="app-content" style="display: none;">
-  <!-- Your existing movie form, search bars, filters, and movie list container stay here -->
-</main>
 
     <div class="wrap"><!-- this class called wrap is where everything on the page will live inside, it is there to help center the whole page-->
 
@@ -118,6 +123,8 @@
   <div class="movie-list" id="movieList"></div>
 
 </div>
+
+</main>
 
 <script type="module" src="movies.js"></script>
 </body>
