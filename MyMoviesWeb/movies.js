@@ -5,6 +5,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebas
 import { 
   getAuth, 
   signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
   signOut, 
   onAuthStateChanged 
 } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
@@ -31,6 +32,9 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+// Your UID is configured here to load the root /movies collection
+const OWNER_UID = "4vJfW2A1YzcSEKcJZGNANpHGyer2";
+
 /* ==========================================================
    2. APP STATE & GLOBAL REFERENCES
    ========================================================== */
@@ -55,48 +59,135 @@ const searchInput  = document.getElementById("searchInput");
 const sortSelect   = document.getElementById("sortSelect");
 const viewSelect   = document.getElementById("viewSelect");
 
-// Auth Bar Elements
-const authEmail    = document.getElementById("authEmail");
-const authPassword = document.getElementById("authPassword");
-const btnLogin     = document.getElementById("btnLogin");
-const btnLogout    = document.getElementById("btnLogout");
-const userStatus   = document.getElementById("userStatus");
+// Sign in / sign up card elements
+const authContainer    = document.getElementById("auth-container");
+const authForm         = document.getElementById("auth-form");
+const authTitle        = document.getElementById("auth-title");
+const authSubtitle     = document.getElementById("auth-subtitle");
+const authEmail        = document.getElementById("auth-email");
+const authPassword     = document.getElementById("auth-password");
+const authConfirmGroup = document.getElementById("auth-confirm-group");
+const authConfirm      = document.getElementById("auth-confirm");
+const authError        = document.getElementById("auth-error");
+const authSubmitBtn    = document.getElementById("auth-submit-btn");
+const authToggleText   = document.getElementById("auth-toggle-text");
+const authToggleBtn    = document.getElementById("auth-toggle-btn");
+
+// Signed-in bar and main app area
+const userHeader       = document.getElementById("user-header");
+const userDisplayEmail = document.getElementById("user-display-email");
+const logoutBtn        = document.getElementById("logout-btn");
+const appContent       = document.getElementById("app-content");
 
 /* ==========================================================
-   3. AUTHENTICATION & REAL-TIME FIRESTORE LISTENER
+   3. SIGN IN / SIGN UP & REAL-TIME LISTENER
    ========================================================== */
-btnLogin.addEventListener("click", async () => {
+let isSignUpMode = false;
+
+function setAuthMode(signUp) {
+  isSignUpMode = signUp;
+
+  authTitle.textContent      = signUp ? "Create your account" : "Welcome to Movie Watchlist";
+  authSubtitle.textContent   = signUp ? "Sign up to start your own watchlist" : "Sign in to access your personal movie library";
+  authSubmitBtn.textContent  = signUp ? "Create account" : "Sign In";
+  authToggleText.textContent = signUp ? "Already have an account?" : "Don't have an account?";
+  authToggleBtn.textContent  = signUp ? "Sign in" : "Create one";
+
+  authConfirmGroup.style.display = signUp ? "block" : "none";
+  authConfirm.required = signUp;
+  authPassword.autocomplete = signUp ? "new-password" : "current-password";
+
+  hideAuthError();
+}
+
+function showAuthError(message) {
+  authError.textContent = message;
+  authError.style.display = "block";
+}
+
+function hideAuthError() {
+  authError.textContent = "";
+  authError.style.display = "none";
+}
+
+function friendlyAuthError(code) {
+  switch (code) {
+    case "auth/email-already-in-use":
+      return "That email already has an account. Try signing in instead.";
+    case "auth/invalid-email":
+      return "That email address doesn't look right.";
+    case "auth/weak-password":
+      return "Your password needs at least 6 characters.";
+    case "auth/invalid-credential":
+    case "auth/wrong-password":
+    case "auth/user-not-found":
+      return "Wrong email or password.";
+    case "auth/too-many-requests":
+      return "Too many tries. Wait a few minutes and try again.";
+    case "auth/network-request-failed":
+      return "Can't reach the internet. Check your connection and try again.";
+    default:
+      return "Something went wrong. Please try again.";
+  }
+}
+
+authToggleBtn.addEventListener("click", () => {
+  setAuthMode(!isSignUpMode);
+});
+
+authForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  hideAuthError();
+
+  const email = authEmail.value.trim();
+  const password = authPassword.value;
+
+  if (isSignUpMode && password !== authConfirm.value) {
+    showAuthError("The two passwords don't match.");
+    return;
+  }
+
+  authSubmitBtn.disabled = true;
+  authSubmitBtn.textContent = isSignUpMode ? "Creating account..." : "Signing in...";
+
   try {
-    await signInWithEmailAndPassword(auth, authEmail.value.trim(), authPassword.value);
-    authEmail.value = "";
-    authPassword.value = "";
+    if (isSignUpMode) {
+      await createUserWithEmailAndPassword(auth, email, password);
+    } else {
+      await signInWithEmailAndPassword(auth, email, password);
+    }
+    authForm.reset();
   } catch (err) {
-    alert("Login failed: " + err.message);
+    showAuthError(friendlyAuthError(err.code));
+  } finally {
+    authSubmitBtn.disabled = false;
+    authSubmitBtn.textContent = isSignUpMode ? "Create account" : "Sign In";
   }
 });
 
-btnLogout.addEventListener("click", async () => {
+logoutBtn.addEventListener("click", async () => {
   await signOut(auth);
 });
 
 onAuthStateChanged(auth, (user) => {
   currentUser = user;
   if (user) {
-    userStatus.textContent = `Logged in: ${user.email}`;
-    authEmail.style.display = "none";
-    authPassword.style.display = "none";
-    btnLogin.style.display = "none";
-    btnLogout.style.display = "inline-block";
+    authContainer.style.display = "none";
+    userHeader.style.display = "flex";
+    appContent.style.display = "block";
+    userDisplayEmail.textContent = user.email;
 
     listenToFirestoreMovies();
   } else {
-    userStatus.textContent = "Not logged in";
-    authEmail.style.display = "inline-block";
-    authPassword.style.display = "inline-block";
-    btnLogin.style.display = "inline-block";
-    btnLogout.style.display = "none";
+    authContainer.style.display = "block";
+    userHeader.style.display = "none";
+    appContent.style.display = "none";
+    setAuthMode(false);
 
-    // Stop real-time listener and clear memory
+    editingId = null;
+    document.getElementById("addBtn").textContent = "Add to watchlist";
+    document.getElementById("cancelEditBtn").style.display = "none";
+
     if (unsubscribeFirestore) {
       unsubscribeFirestore();
       unsubscribeFirestore = null;
@@ -107,9 +198,8 @@ onAuthStateChanged(auth, (user) => {
 });
 
 function listenToFirestoreMovies() {
-  const moviesCollection = collection(db, "movies");
+  const moviesCollection = moviesCollectionRef();
 
-  // onSnapshot triggers automatically whenever docs are added, changed, or removed
   unsubscribeFirestore = onSnapshot(moviesCollection, (snapshot) => {
     movies = snapshot.docs.map(docSnap => ({
       id: docSnap.id,
@@ -127,6 +217,20 @@ function listenToFirestoreMovies() {
 /* ==========================================================
    4. MOVIE CRUD ACTIONS (FIRESTORE)
    ========================================================== */
+function moviesCollectionRef() {
+  if (currentUser.uid === OWNER_UID) {
+    return collection(db, "movies");
+  }
+  return collection(db, "users", currentUser.uid, "movies");
+}
+
+function movieDocRef(id) {
+  if (currentUser.uid === OWNER_UID) {
+    return doc(db, "movies", id);
+  }
+  return doc(db, "users", currentUser.uid, "movies", id);
+}
+
 async function addMovie() {
   if (!currentUser) {
     alert("Please log in first to manage your watchlist.");
@@ -148,7 +252,6 @@ async function addMovie() {
     return;
   }
 
-  // Duplicate prevention
   if (!editingId) {
     const isDuplicate = movies.some(m =>
       m.title.toLowerCase() === title.toLowerCase() && m.year === year
@@ -161,9 +264,8 @@ async function addMovie() {
 
   try {
     if (editingId) {
-      // EDIT MODE: update Firestore document
-      const movieDocRef = doc(db, "movies", editingId);
-      await updateDoc(movieDocRef, {
+      const docRef = movieDocRef(editingId);
+      await updateDoc(docRef, {
         title: title,
         year: year,
         genre: genreEl.value.trim(),
@@ -176,8 +278,7 @@ async function addMovie() {
       document.getElementById("addBtn").textContent = "Add to watchlist";
       document.getElementById("cancelEditBtn").style.display = "none";
     } else {
-      // ADD MODE: create new document in Firestore
-      await addDoc(collection(db, "movies"), {
+      await addDoc(moviesCollectionRef(), {
         title: title,
         year: year,
         country: countryEl.value.trim(),
@@ -189,7 +290,6 @@ async function addMovie() {
       });
     }
 
-    // Reset input fields
     titleEl.value = "";
     yearEl.value = "";
     genreEl.value = "";
@@ -228,8 +328,8 @@ async function toggleWatched(id) {
   if (!movie) return;
 
   try {
-    const movieDocRef = doc(db, "movies", id);
-    await updateDoc(movieDocRef, {
+    const docRef = movieDocRef(id);
+    await updateDoc(docRef, {
       watched: !movie.watched
     });
   } catch (error) {
@@ -244,8 +344,8 @@ function deleteMovie(id) {
     cardEl.classList.add("removing");
     setTimeout(async () => {
       try {
-        const movieDocRef = doc(db, "movies", id);
-        await deleteDoc(movieDocRef);
+        const docRef = movieDocRef(id);
+        await deleteDoc(docRef);
       } catch (error) {
         console.error("Error deleting movie:", error);
       }
@@ -255,7 +355,7 @@ function deleteMovie(id) {
 
 /* ==========================================================
    5. UI RENDERING & TEMPLATES
-   ========================================================= */
+   ========================================================== */
 function buildCard(movie) {
   const posterSrc = movie.poster || FALLBACK_POSTER;
   const dateAdded = movie.addedAt ? new Date(movie.addedAt).toLocaleDateString() : "Recently";
@@ -331,7 +431,6 @@ function render() {
 /* ==========================================================
    6. GLOBAL EXPOSURE & EVENT LISTENERS
    ========================================================== */
-// Expose functions to window because this file is an ES module
 window.toggleWatched = toggleWatched;
 window.editMovie = editMovie;
 window.deleteMovie = deleteMovie;
