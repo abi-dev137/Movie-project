@@ -7,7 +7,8 @@ import {
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   signOut, 
-  onAuthStateChanged 
+  onAuthStateChanged, 
+  updateProfile
 } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 import { 
   getFirestore, 
@@ -76,6 +77,9 @@ const authToggleBtn    = document.getElementById("auth-toggle-btn");
 // Signed-in bar and main app area
 const userHeader       = document.getElementById("user-header");
 const userDisplayEmail = document.getElementById("user-display-email");
+const authNicknameGroup = document.getElementById("auth-nickname-group");
+const authNickname     = document.getElementById("auth-nickname");
+const userAvatar       = document.getElementById("user-avatar");
 const logoutBtn        = document.getElementById("logout-btn");
 const appContent       = document.getElementById("app-content");
 
@@ -95,6 +99,7 @@ function setAuthMode(signUp) {
 
   authConfirmGroup.style.display = signUp ? "block" : "none";
   authConfirm.required = signUp;
+  if (authNicknameGroup) authNicknameGroup.style.display = signUp ? "block" : "none";
   authPassword.autocomplete = signUp ? "new-password" : "current-password";
 
   hideAuthError();
@@ -152,7 +157,13 @@ authForm.addEventListener("submit", async (e) => {
 
   try {
     if (isSignUpMode) {
-      await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const nicknameVal = authNickname ? authNickname.value.trim() : "";
+      if (nicknameVal) {
+        await updateProfile(userCredential.user, {
+          displayName: nicknameVal
+        });
+      }
     } else {
       await signInWithEmailAndPassword(auth, email, password);
     }
@@ -175,10 +186,18 @@ onAuthStateChanged(auth, (user) => {
     authContainer.style.display = "none";
     userHeader.style.display = "flex";
     appContent.style.display = "block";
-    userDisplayEmail.textContent = user.email;
+
+    // Grab nickname if set, or strip domain from email:
+    const displayName = user.displayName || user.email.split('@')[0];
+    userDisplayEmail.textContent = displayName;
+
+    // Put first letter inside the avatar circle:
+    if (userAvatar) {
+      userAvatar.textContent = displayName.charAt(0).toUpperCase();
+    }
 
     listenToFirestoreMovies();
-  } else {
+  } else  {
     authContainer.style.display = "block";
     userHeader.style.display = "none";
     appContent.style.display = "none";
@@ -469,3 +488,12 @@ viewSelect.addEventListener("change", () => {
 
 sortSelect.value = "earliest";
 render();
+
+window.setMyNickname = async (name) => {
+  if (currentUser) {
+    await updateProfile(currentUser, { displayName: name });
+    userDisplayEmail.textContent = name;
+    if (userAvatar) userAvatar.textContent = name.charAt(0).toUpperCase();
+    console.log("Nickname updated to:", name);
+  }
+};
