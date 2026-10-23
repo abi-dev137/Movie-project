@@ -338,29 +338,33 @@ input::placeholder {
   border: 1px dashed var(--card-edge);   /* dashed, not solid — signals "this is a placeholder box," not real content */
 }
 
-/* Auth Card Styling */
+/* ---------- Sign in / sign up card ---------- */
 .auth-card {
   max-width: 380px;
+  width: calc(100% - 2rem);          /* keeps a little gap at the edges on small phones */
   margin: 3rem auto;
   padding: 2rem;
-  background: #1e1e24;
-  color: #f3f4f6;
+  background: var(--panel);
+  border: 1px solid var(--card-edge);
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-  font-family: inherit;
   text-align: center;
+  animation: cardIn 0.35s ease-out;  /* same fade-up the movie cards use */
 }
 
 .auth-card h2 {
-  margin-bottom: 0.5rem;
+  margin: 0 0 0.5rem 0;
+  font-family: Georgia, "Times New Roman", serif;
   font-size: 1.5rem;
-  color: #fff;
+  font-weight: 600;
+  color: var(--text);
 }
 
-.auth-card p {
-  color: #9ca3af;
+/* targets the subtitle by id, so it doesn't also catch the error message below it */
+#auth-subtitle {
+  margin: 0 0 1.5rem 0;
+  color: var(--muted);
   font-size: 0.9rem;
-  margin-bottom: 1.5rem;
 }
 
 .input-group {
@@ -370,98 +374,100 @@ input::placeholder {
 
 .input-group label {
   display: block;
-  font-size: 0.85rem;
   margin-bottom: 0.35rem;
-  color: #d1d5db;
+  font-size: 0.85rem;
+  color: var(--muted);
 }
 
+/* the inputs themselves already get the dark style from the general input rule higher up */
 .input-group input {
-  width: 100%;
   padding: 0.65rem 0.85rem;
-  border-radius: 6px;
-  border: 1px solid #374151;
-  background-color: #111827;
-  color: #fff;
   font-size: 0.95rem;
-  box-sizing: border-box;
 }
 
-.input-group input:focus {
-  outline: none;
-  border-color: #3b82f6;
-}
-
+/* the big gold Sign In / Create account button */
 .primary-btn {
   width: 100%;
+  margin-top: 0.5rem;
   padding: 0.75rem;
-  background-color: #2563eb;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
+  background: var(--gold);
+  color: #1A1300;
   font-size: 1rem;
   font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  margin-top: 0.5rem;
 }
 
 .primary-btn:hover {
-  background-color: #1d4ed8;
+  transform: none;                 /* a full-width button looks odd when it grows on hover */
+  filter: brightness(1.08);
+}
+
+/* greyed out while the account is being created or checked */
+.primary-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 
 .auth-error-msg {
-  color: #ef4444 !important;
-  font-size: 0.85rem;
   margin: 0.5rem 0;
+  padding: 0.5rem 0.75rem;
+  background: rgba(229, 100, 107, 0.1);
+  border: 1px solid var(--danger);
+  border-radius: 6px;
+  color: var(--danger);
+  font-size: 0.85rem;
+  text-align: left;
 }
 
+/* the "Don't have an account? Create one" line */
 .auth-toggle {
   margin-top: 1.25rem;
   font-size: 0.85rem;
-  color: #9ca3af;
+  color: var(--muted);
 }
 
 .auth-toggle button {
+  margin-left: 0.25rem;
+  padding: 0;
   background: none;
   border: none;
-  color: #60a5fa;
-  cursor: pointer;
+  color: var(--gold);
+  font-size: inherit;
   font-weight: 600;
-  padding: 0;
-  margin-left: 0.25rem;
+  cursor: pointer;
 }
 
 .auth-toggle button:hover {
+  transform: none;
   text-decoration: underline;
 }
 
-/* User Header when signed in */
+/* ---------- Bar across the top when signed in ---------- */
 .user-header {
   display: flex;
   justify-content: flex-end;
   align-items: center;
   gap: 1rem;
   padding: 0.75rem 1.5rem;
-  background: #111827;
-  border-bottom: 1px solid #1f2937;
+  background: var(--panel);
+  border-bottom: 1px solid var(--card-edge);
 }
 
 .user-email-badge {
   font-size: 0.85rem;
-  color: #9ca3af;
+  color: var(--muted);
 }
 
 .secondary-btn {
   padding: 0.4rem 0.8rem;
   background: transparent;
-  color: #ef4444;
-  border: 1px solid #ef4444;
+  color: var(--muted);
+  border: 1px solid var(--card-edge);
   border-radius: 4px;
-  cursor: pointer;
   font-size: 0.85rem;
+  cursor: pointer;
 }
 
 .secondary-btn:hover {
-  background: #ef4444;
-  color: white;
+  color: var(--danger);
+  border-color: var(--danger);
 }
