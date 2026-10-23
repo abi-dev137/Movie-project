@@ -471,3 +471,23 @@ input::placeholder {
   color: var(--danger);
   border-color: var(--danger);
 }
+
+.user-profile-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.avatar-circle {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background-color: #e50914; /* Accent color */
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+}
